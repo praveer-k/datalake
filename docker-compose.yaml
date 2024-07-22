@@ -1,0 +1,169 @@
+services:
+  minio:
+    container_name: minio
+    image: minio/minio:latest
+    environment:
+      MINIO_ROOT_USER: ${STORAGE__USER}
+      MINIO_ROOT_PASSWORD: ${STORAGE__PASSWORD}
+      MINIO_ADDRESS: ':9000'
+      MINIO_STORAGE_USE_HTTPS: False
+      MINIO_CONSOLE_ADDRESS: ':9001'
+      MINIO_PORT: 9000
+      MINIO_CONSOLE_PORT: 9001
+    expose:
+      - "9000"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: timeout 5s bash -c ':> /dev/tcp/127.0.0.1/9000' || exit 1
+      interval: 1s
+      timeout: 10s
+      retries: 5
+    command: server --console-address ":9001" /data
+    volumes:
+      - ./.local/minio:/data
+    networks:
+      - dbnetwork
+
+  minio-create-bucket:
+    image: minio/mc:latest
+    entrypoint: >
+      bash -c "mc alias set minio ${STORAGE__ENDPOINT} ${STORAGE__USER} ${STORAGE__PASSWORD} &&
+      if mc find minio/${STORAGE__DATA_LAKE_BUCKET} > /dev/null 2>&1; then 
+        echo 'Bucket exists';
+      else 
+        echo 'Bucket does not exist ... creating a new one ${STORAGE__DATA_LAKE_BUCKET}'; 
+        mc mb minio/${STORAGE__DATA_LAKE_BUCKET};
+      fi &&
+      if mc find minio/${STORAGE__DATA_LAKE_BUCKET}/raw > /dev/null 2>&1; then 
+        echo 'Raw data already exists';
+      else 
+        echo 'Raw data does not exist ... adding raw data to ${STORAGE__DATA_LAKE_BUCKET}/raw'; 
+        echo '${YELP_DATASET__LOCAL_PATH}'; 
+        mc cp --recursive '${YELP_DATASET__LOCAL_PATH}' 'minio/${STORAGE__DATA_LAKE_BUCKET}/raw/';
+      fi"
+    volumes:
+      - .local:/.local
+    depends_on:
+      minio:
+        condition: service_healthy
+    networks:
+      - dbnetwork
+
+  postgres:
+    container_name: postgres
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${DB__USER}
+      POSTGRES_PASSWORD: ${DB__PASSWORD}
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB__USER} -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dbnetwork
+    
+  postgres-create-database:
+    container_name: postgres-create-database
+    image: postgres:latest
+    env_file:
+      - .env
+    environment:
+      PGUSER: ${DB__USER}
+      PGPASSWORD: ${DB__PASSWORD}
+      PGHOST: ${DB__HOST}
+      PGDATABASE: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: > 
+      bash -c "
+        echo 'Creating database ${DB__NAME} if it does not exist...'
+        psql -c 'CREATE DATABASE ${DB__NAME} WITH OWNER ${DB__USER};'
+        echo 'Database creation completed.'
+        exit 0
+      "
+    networks:
+      - dbnetwork
+  
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4:latest
+    environment:
+      PGHOST: ${DB__HOST}
+      PGADMIN_DEFAULT_EMAIL: ${DB__EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${DB__PASSWORD}
+    ports:
+      - "5000:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - dbnetwork
+
+  spark-master:
+    container_name: spark-master
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    volumes:
+      - ./dist:/opt/bitnami/spark/dist
+    networks:
+      - dbnetwork
+
+  spark-worker-1:
+    container_name: spark-worker-1
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+    depends_on:
+      - spark-master
+    networks:
+      - dbnetwork
+
+  spark-worker-2:
+    container_name: spark-worker-2
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+    depends_on:
+      - spark-master
+    networks:
+      - dbnetwork
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+
+networks:
+  dbnetwork:

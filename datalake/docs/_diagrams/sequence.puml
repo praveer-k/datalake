@@ -1,0 +1,30 @@
+@startuml Data Pipeline - Sequence Diagram
+!theme plain
+skinparam backgroundColor #F5F5F5
+
+title Data Pipeline - Sequence Diagram
+
+participant User
+participant Pipeline
+participant Storage
+participant Database
+participant Dashboard
+
+User -> Storage: Store raw data
+User -> Pipeline: Trigger pipeline to clean
+Pipeline <- Storage: Read raw data
+Pipeline -> Storage: Store cleaned data
+
+User -> Pipeline: Trigger pipeline to aggregate
+Pipeline <- Storage: Read cleaned data
+Pipeline -> Storage: Store aggregated data
+User -> Pipeline: Trigger pipeline to load data to db
+
+Pipeline <- Storage: Read aggregated data
+
+activate Database
+Pipeline -> Database: Store data to database
+
+Dashboard <--> Database: Request/Response
+
+@enduml

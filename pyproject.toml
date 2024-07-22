@@ -1,0 +1,48 @@
+[tool.poetry]
+name = "datalake"
+version = "0.1.0"
+description = "A data engineering programming exercise"
+authors = ["praveer kumar <praveerkumar17@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [
+    { include = "datalake", from = "." },
+]
+
+[tool.poetry.dependencies]
+python = ">=3.11.9"
+pyspark = "^3.5.1"
+minio = "^7.2.7"
+pydantic = "^2.8.2"
+sqlalchemy = "^2.0.31"
+pydantic-settings = "^2.3.4"
+streamlit = "^1.36.0"
+tqdm = "^4.66.4"
+psycopg2-binary = "^2.9.9"
+psycopg2 = { version = "^2.9.9", optional = true }
+s3fs = "^2024.6.1"
+httpx = {extras = ["http2"], version = "^0.27.0"}
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.4.2"
+pytest = "^8.2.2"
+
+[tool.poetry.extras]
+postgres = ["psycopg2"]
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "^7.4.4"
+sphinx-rtd-theme = "^2.0.0"
+recommonmark = "^0.7.1"
+furo = "^2024.5.6"
+sphinxcontrib-plantuml = "^0.30"
+
+[tool.poetry.scripts]
+docs = "datalake.docs.__main__:main"
+dashboard = "datalake.dashboard.__main__:cli"
+download = "datalake.downloader.__main__:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
