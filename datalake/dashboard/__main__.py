@@ -81,7 +81,7 @@ def fetch_weekly_stats():
 
 def main():
     st.set_page_config(
-        page_title="NewYorker.com",
+        page_title="AmazingCompany.com",
         page_icon=":rocket:",
         layout="wide",
         initial_sidebar_state="expanded",
