@@ -71,9 +71,9 @@ Here is the sample **.env** file with required settings.
    DB__PASSWORD=example
    DB__NAME=yelp_dataset
 
-   YELP_DATASET__AUTH__NAME="Praveer Kumar"
-   YELP_DATASET__AUTH__EMAIL="praveerkumar17@gmail.com"
-   YELP_DATASET__AUTH__SIGNATURE="praveerk"
+   YELP_DATASET__AUTH__NAME="Xxxxx Xxxxx"
+   YELP_DATASET__AUTH__EMAIL="xxxxxxxxx@gmail.com"
+   YELP_DATASET__AUTH__SIGNATURE="xxxxxx"
    YELP_DATASET__DOWNLOAD_LINK="https://www.yelp.com/dataset/download"
    YELP_DATASET__LOCAL_PATH=".local/downloads/yelp_dataset/"
 ```
