@@ -51,7 +51,7 @@ Here is the sample **.env** file with required settings.
 ```bash
    LOG_LEVEL=debug
 
-   DOCS__TITLE="NewYorker.com"
+   DOCS__TITLE="AmazingCompany.com"
    DOCS__DESCRIPTION="Data Engineering Programming Challenge"
    DOCS__VERSION="0.1.0"
    DOCS__SOURCE_DIR="datalake/docs"
